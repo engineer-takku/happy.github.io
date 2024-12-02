@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            color: white;
+            font-size: 3em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .message {
+            color: white;
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+
+        .cake {
+            font-size: 5em;
+            margin: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        .balloons {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .balloon {
+            position: absolute;
+            animation: float 6s infinite;
+            font-size: 2em;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh); }
+            100% { transform: translateY(-100px) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="balloons" id="balloons"></div>
+    <div class="container">
+        <h1>お誕生日おめでとう！</h1>
+        <div class="cake">🎂</div>
+        <div class="message" id="message">素敵な1年になりますように！</div>
+    </div>
+
+    <script>
+        // バルーンのアニメーション
+        const balloons = ['🎈', '🎊', '🎉', '⭐'];
+        const balloonsContainer = document.getElementById('balloons');
+
+        function createBalloon() {
+            const balloon = document.createElement('div');
+            balloon.className = 'balloon';
+            balloon.textContent = balloons[Math.floor(Math.random() * balloons.length)];
+            balloon.style.left = Math.random() * 100 + 'vw';
+            balloon.style.animationDuration = (6 + Math.random() * 4) + 's';
+            balloonsContainer.appendChild(balloon);
+
+            // アニメーション終了後に要素を削除
+            balloon.addEventListener('animationend', () => {
+                balloon.remove();
+            });
+        }
+
+        // 定期的にバルーンを生成
+        setInterval(createBalloon, 300);
+
+        // URLパラメータからメッセージを取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const customMessage = urlParams.get('message');
+        if (customMessage) {
+            document.getElementById('message').textContent = decodeURIComponent(customMessage);
+        }
+    </script>
+</body>
+</html>
