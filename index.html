@@ -59,6 +59,36 @@
             font-size: 2em;
         }
 
+        .music-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 2;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .music-control:hover {
+            transform: scale(1.1);
+        }
+
+        .note {
+            position: absolute;
+            font-size: 1.5em;
+            animation: floatNote 4s linear infinite;
+            opacity: 0;
+        }
+
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-20px); }
@@ -67,6 +97,23 @@
         @keyframes float {
             0% { transform: translateY(100vh); }
             100% { transform: translateY(-100px) rotate(360deg); }
+        }
+
+        @keyframes floatNote {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            20% {
+                opacity: 1;
+            }
+            80% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(20deg);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -77,8 +124,117 @@
         <div class="cake">🎂</div>
         <div class="message" id="message">素敵な1年になりますように！</div>
     </div>
+    <div class="music-control" id="musicControl">🔇</div>
 
     <script>
+        // 音符の追加
+        function createNote() {
+            if (!isMusicPlaying) return;
+            
+            const notes = ['♪', '♫', '♩', '♬'];
+            const note = document.createElement('div');
+            note.className = 'note';
+            note.textContent = notes[Math.floor(Math.random() * notes.length)];
+            note.style.left = `${Math.random() * 100}vw`;
+            note.style.top = `${Math.random() * 100}vh`;
+            document.body.appendChild(note);
+
+            note.addEventListener('animationend', () => note.remove());
+        }
+
+        // オーディオコンテキストの作成
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let source;
+        let buffer;
+
+        // Happy Birthday の音符データ（ハ長調）
+        const notes = [
+            { note: 'C4', duration: 0.75 }, // ハッ
+            { note: 'C4', duration: 0.25 }, // ピー
+            { note: 'D4', duration: 1 },    // バース
+            { note: 'C4', duration: 1 },    // デー
+            { note: 'F4', duration: 1 },    // トゥー
+            { note: 'E4', duration: 2 },    // ユー
+            
+            { note: 'C4', duration: 0.75 }, // ハッ
+            { note: 'C4', duration: 0.25 }, // ピー
+            { note: 'D4', duration: 1 },    // バース
+            { note: 'C4', duration: 1 },    // デー
+            { note: 'G4', duration: 1 },    // トゥー
+            { note: 'F4', duration: 2 },    // ユー
+            
+            { note: 'C4', duration: 0.75 }, // ハッ
+            { note: 'C4', duration: 0.25 }, // ピー
+            { note: 'C5', duration: 1 },    // バース
+            { note: 'A4', duration: 1 },    // デー
+            { note: 'F4', duration: 1 },    // ディア
+            { note: 'E4', duration: 1 },    // (name)
+            { note: 'D4', duration: 1 },    // ー
+            
+            { note: 'Bb4', duration: 0.75 }, // ハッ
+            { note: 'Bb4', duration: 0.25 }, // ピー
+            { note: 'A4', duration: 1 },    // バース
+            { note: 'F4', duration: 1 },    // デー
+            { note: 'G4', duration: 1 },    // トゥー
+            { note: 'F4', duration: 2 },    // ユー
+        ];
+
+        // 音を生成する関数
+        async function playNote(frequency, duration) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration);
+            
+            return new Promise(resolve => setTimeout(resolve, duration * 1000));
+        }
+
+        // 音符から周波数を取得
+        function getFrequency(note) {
+            const notes = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, Bb4: 466.16, C5: 523.25 };
+            return notes[note];
+        }
+
+        // 曲を演奏
+        async function playMusic() {
+            if (!isMusicPlaying) return;
+            
+            for (const note of notes) {
+                if (!isMusicPlaying) break;
+                await playNote(getFrequency(note.note), note.duration);
+            }
+            
+            if (isMusicPlaying) {
+                playMusic(); // ループ再生
+            }
+        }
+
+        // 音楽コントロール
+        const musicControl = document.getElementById('musicControl');
+        let isMusicPlaying = false;
+
+        musicControl.addEventListener('click', async () => {
+            if (isMusicPlaying) {
+                isMusicPlaying = false;
+                musicControl.textContent = '🔇';
+            } else {
+                await audioContext.resume();
+                isMusicPlaying = true;
+                musicControl.textContent = '🔊';
+                playMusic();
+            }
+        });
+
         // バルーンのアニメーション
         const balloons = ['🎈', '🎊', '🎉', '⭐'];
         const balloonsContainer = document.getElementById('balloons');
@@ -91,14 +247,13 @@
             balloon.style.animationDuration = (6 + Math.random() * 4) + 's';
             balloonsContainer.appendChild(balloon);
 
-            // アニメーション終了後に要素を削除
             balloon.addEventListener('animationend', () => {
                 balloon.remove();
             });
         }
 
-        // 定期的にバルーンを生成
         setInterval(createBalloon, 300);
+        setInterval(createNote, 500);
 
         // URLパラメータからメッセージを取得
         const urlParams = new URLSearchParams(window.location.search);
